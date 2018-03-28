@@ -1,0 +1,3 @@
+[submodule "rakelib"]
+	path = rakelib
+	url = https://stash.aviva.co.uk/scm/cloud/packer-rakelib.git

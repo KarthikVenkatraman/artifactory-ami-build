@@ -1,0 +1,9 @@
+#cloud-config
+trend:
+  server: <%= trend_dsa_dns_name %>
+  policy_id: <%= trend_policy_id_linux %>
+environment:
+  http_proxy: http://<%= bakery_proxy_dns_name %>:80
+  https_proxy: http://<%= bakery_proxy_dns_name %>:80
+  management_proxy: http://<%= management_proxy_dns_name %>:80
+  no_proxy: localhost,127.0.0.1,.via.novonet,.avivagroup.com,.avivaaws.com,.compute.internal,.avivacloud.com,169.254.169.254

@@ -1,0 +1,124 @@
+{
+  "variables": {
+    "ami_name": "shared-artifactory",
+    "iam_instance_profile": "technical-services-tools-b0a500c34ed1",
+    "rhel_7_base_v2_ami_id": "",
+    "management_vpc_id": "",
+    "bakery_1_subnet_id": "",
+    "management_sg_id": "",
+    "bakery_sg_id": "",
+    "owner_tag": "sanjay.sharma1@aviva.com",
+    "cost_centre_tag": "9MT63",
+    "hsn_tag": "ARTIFACTORY PRE AWD",
+    "user_data_file": "user_data.yml",
+    "team_tag": "technical-services-tools",
+	"artifactory_version": "5.5.1"
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "ami_name": "{{user `ami_name`}}-{{isotime \"2006-01-02-150405\"}}",
+      "iam_instance_profile": "{{user `iam_instance_profile`}}",
+      "region": "eu-west-1",
+      "source_ami": "{{user `rhel_7_base_v2_ami_id`}}",
+      "instance_type": "t2.small",
+      "ssh_username": "ec2-user",
+      "ssh_timeout": "10m",
+      "ssh_pty": "true",
+      "ssh_private_ip": "true",
+      "vpc_id": "{{user `management_vpc_id`}}",
+      "subnet_id": "{{user `bakery_1_subnet_id`}}",
+      "security_group_ids": "{{user `management_sg_id`}},{{user `bakery_sg_id`}}",
+      "run_tags": {
+        "Name": "{{user `ami_name`}}-build",
+        "Owner": "{{user `owner_tag`}}",
+        "Costcentre_Projectcode": "{{user `cost_centre_tag`}}",
+        "HSN": "{{user `hsn_tag`}}"
+      },
+      "tags": {
+        "Name": "{{user `ami_name`}}",
+        "Owner": "{{user `owner_tag`}}",
+        "Costcentre_Projectcode": "{{user `cost_centre_tag`}}",
+        "HSN": "{{user `hsn_tag`}}",
+        "SourceAmi": "{{user `rhel_7_base_v2_ami_id`}}",
+        "Team": "{{user `team_tag`}}"
+      },
+	  "launch_block_device_mappings": [
+        {
+          "device_name" : "/dev/sdk",
+          "volume_type" : "gp2",
+          "volume_size" : "50",
+		  "delete_on_termination": true
+        }
+
+      ],
+      "ami_block_device_mappings": [
+        {
+          "device_name": "/dev/sdk",
+          "volume_type": "gp2",
+          "volume_size": "50",
+		  "delete_on_termination": true
+        }
+      ],
+      "user_data_file": "{{user `user_data_file`}}"
+    }
+  ],
+  "provisioners": [{
+			"type": "file",
+			"source": "install_artifactory.sh",
+			"pause_before": "10s",
+			"destination": "/tmp/install_artifactory.sh"
+		},
+		{
+			"type": "file",
+			"source": "binarystore.xml",
+			"pause_before": "10s",
+			"destination": "/tmp/binarystore.xml"
+		},
+		{
+			"type": "file",
+			"source": "db.properties",
+			"pause_before": "10s",
+			"destination": "/tmp/db.properties"
+		},
+		{
+			"type": "file",
+			"source": "ha-node.properties",
+			"pause_before": "10s",
+			"destination": "/tmp/ha-node.properties"
+		},
+		{
+			"type": "file",
+			"source": "artifactory.cluster.license",
+			"pause_before": "10s",
+			"destination": "/tmp/artifactory.cluster.license"
+		},
+		{
+			"type": "file",
+			"source": "replace_context_primary.sh",
+			"pause_before": "10s",
+			"destination": "/tmp/replace_context_primary.sh"
+		},
+		{
+			"type": "file",
+			"source": "replace_context_member.sh",
+			"pause_before": "10s",
+			"destination": "/tmp/replace_context_member.sh"
+		},
+		{
+			"type": "shell",
+			"inline": [
+				"chmod u+x /tmp/install_artifactory.sh"
+			],
+			"execute_command": "{{ .Vars }} sudo -E -S sh '{{ .Path }}'"
+		},
+		{
+			"type": "shell",
+			"environment_vars": ["ARTIFACTORY_VERSION={{user `artifactory_version`}}"],
+			"inline": [
+				"sh /tmp/install_artifactory.sh $ARTIFACTORY_VERSION"
+			],
+			"execute_command": "{{ .Vars }} sudo -E -S sh '{{ .Path }}'"
+		}
+	]
+}

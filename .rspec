@@ -1,0 +1,7 @@
+--color
+--format progress
+--format documentation
+--format json
+--out serverspec.json
+--format html
+--out serverspec.html

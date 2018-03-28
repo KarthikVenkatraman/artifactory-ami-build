@@ -1,0 +1,13 @@
+.idea/
+.project
+*.dot
+*.orig
+Gemfile.lock
+packer/*user_data*.yml
+packer/*variables*.json
+packer/copy*.json
+packer/*.pem
+serverspec.html
+serverspec.json
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup

@@ -1,0 +1,95 @@
+{
+  "variables": {
+    "aws_access_key": "<%= aws_access_key %>",
+    "aws_secret_key": "<%= aws_secret_key %>",
+    "aws_security_token": "<%= aws_security_token %>",
+    "ami_name": "<%= ami_name %>",
+    "source_ami_id": "<%= source_ami_id %>",
+    "vpc_id ": "<%= vpc_id %>",
+    "subnet_id": "<%= bakery_1_subnet_id %>",
+    "bakery_sg_id": "<%= bakery_sg_id %>",
+    "owner_tag": "cloudtoolingteam@aviva.com",
+    "cost_centre_tag": "9ISD1",
+    "hsn_tag": "DIGITAL TOOLS DEV EC2 AWS",
+    "user_data_file": "win_user_data.ps1"
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "token": "{{user `aws_security_token`}}",
+      "ami_name": "{{user `ami_name`}}",
+      "region": "eu-west-1",
+      "source_ami": "{{user `source_ami_id`}}",
+      "instance_type": "t2.small",
+      "communicator": "winrm",
+      "winrm_username": "Administrator",
+      "winrm_port": "5985",
+      "windows_password_timeout": "30m",
+      "vpc_id": "{{user `vpc_id `}}",
+      "subnet_id": "{{user `subnet_id`}}",
+      "security_group_ids": "{{user `bakery_sg_id`}}",
+      "associate_public_ip_address": "false",
+      "user_data_file": "{{user `user_data_file`}}",
+      "run_tags": {
+        "Name": "{{user `ami_name`}}-private-copy-build",
+        "SourceAmi": "{{user `source_ami_id`}}",
+        "Owner": "{{user `owner_tag`}}",
+        "Costcentre_Projectcode": "{{user `cost_centre_tag`}}",
+        "HSN": "{{user `hsn_tag`}}"
+      },
+      "tags": {
+        "Name": "{{user `ami_name`}}-private-copy",
+        "SourceAmi": "{{user `source_ami_id`}}",
+        "Owner": "{{user `owner_tag`}}",
+        "Costcentre_Projectcode": "{{user `cost_centre_tag`}}",
+        "HSN": "{{user `hsn_tag`}}"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "windows-shell",
+      "inline": [
+        "cmd /c MKDIR C:\\Aviva\\Scripts",
+        "cmd /c MKDIR C:\\Apps",
+        "cmd /c net user /add tempUser jYtdf75dsfk",
+        "cmd /c net localgroup administrators tempUser /add"
+      ]
+    },
+    {
+      "type": "powershell",
+      "elevated_user": "tempUser",
+      "elevated_password": "jYtdf75dsfk",
+      "script": "win_cleanup.ps1",
+      "remote_path": "C:\\Aviva\\Scripts\\packer_copy_cleanup.ps1",
+      "execute_command": "C:\\Aviva\\Scripts\\packer_copy_cleanup.ps1"
+    },
+    {
+      "type": "windows-shell",
+      "inline": [
+        "cmd /c net user tempUser /delete"
+      ]
+    },
+    {
+      "type": "windows-shell",
+      "inline": [
+        "cmd.exe /c \"C:\\Program Files\\Trend Micro\\Deep Security Agent\\dsa_control.cmd\" -s=0",
+        "cmd.exe /c \"C:\\Program Files\\Trend Micro\\Deep Security Agent\\dsa_control.cmd\" -r"
+      ]
+    },
+    {
+      "type": "file",
+      "source": "win_disable_winrm.reg",
+      "destination": "C:\\Windows\\Temp\\packer_copy_disable_winrm.reg"
+    },
+    {
+      "type": "windows-shell",
+      "inline": [
+        "cmd.exe /c \"REGEDIT /s C:\\Windows\\Temp\\packer_copy_disable_winrm.reg",
+        "cmd /c \"C:\\Program Files\\Amazon\\Ec2ConfigService\\EC2Config.exe\" -sysprep"
+      ]
+    }
+  ]
+}
